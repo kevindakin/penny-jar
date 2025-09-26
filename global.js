@@ -607,6 +607,118 @@ function buttonHover() {
   });
 }
 
+function scrambleHover() {
+  const cards = document.querySelectorAll('[data-hover="card"]');
+
+  if (!cards.length) return;
+
+  // Characters used for scrambling effect
+  const scrambleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+  cards.forEach((card) => {
+    const defaultText = card.querySelector(".card_image_text");
+    const hoverText = card.querySelector(".card_image_text-hover");
+
+    if (!defaultText || !hoverText) return;
+
+    const originalText = defaultText.textContent;
+    const targetText = hoverText.textContent;
+
+    let isAnimating = false;
+    let currentInterval = null;
+
+    function scrambleText(finalText, duration = 300) {
+      // Clear any existing animation
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+
+      isAnimating = true;
+
+      const textLength = finalText.length;
+      const iterations = Math.floor(duration / 50); // 50ms per frame
+      let currentIteration = 0;
+
+      currentInterval = setInterval(() => {
+        let scrambledText = "";
+
+        for (let i = 0; i < textLength; i++) {
+          if (currentIteration > iterations * (i / textLength)) {
+            // Start revealing the final character
+            scrambledText += finalText[i] || "";
+          } else {
+            // Show random character
+            scrambledText +=
+              scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+          }
+        }
+
+        defaultText.textContent = scrambledText;
+        currentIteration++;
+
+        if (currentIteration >= iterations + textLength) {
+          clearInterval(currentInterval);
+          defaultText.textContent = finalText;
+          isAnimating = false;
+          currentInterval = null;
+        }
+      }, 50);
+
+      return currentInterval;
+    }
+
+    function scrambleTextThenSwap(currentText, finalText, duration = 300) {
+      // Clear any existing animation
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+
+      isAnimating = true;
+
+      const textLength = currentText.length;
+      const iterations = Math.floor(duration / 50); // 50ms per frame
+      let currentIteration = 0;
+
+      currentInterval = setInterval(() => {
+        let scrambledText = "";
+
+        // Scramble all characters
+        for (let i = 0; i < textLength; i++) {
+          scrambledText +=
+            scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+        }
+
+        defaultText.textContent = scrambledText;
+        currentIteration++;
+
+        if (currentIteration >= iterations) {
+          clearInterval(currentInterval);
+          // After scrambling is done, immediately show the final text
+          defaultText.textContent = finalText;
+          isAnimating = false;
+          currentInterval = null;
+        }
+      }, 50);
+
+      return currentInterval;
+    }
+
+    // Hover in
+    card.addEventListener("mouseenter", () => {
+      // Immediately show the target text length and start scrambling
+      defaultText.textContent = targetText;
+      scrambleText(targetText, 300);
+    });
+
+    // Hover out
+    card.addEventListener("mouseleave", () => {
+      // Scramble the current hover text, then show original text
+      const currentText = defaultText.textContent;
+      scrambleTextThenSwap(currentText, originalText, 300);
+    });
+  });
+}
+
 window.addEventListener("load", () => {
   lenisScroll();
   copyright();
@@ -622,6 +734,7 @@ window.addEventListener("load", () => {
   gsap.matchMedia().add("(min-width: 992px)", () => {
     charHover();
     buttonHover();
+    scrambleHover();
   });
 
   gsap.matchMedia().add("(max-width: 767px)", () => {
