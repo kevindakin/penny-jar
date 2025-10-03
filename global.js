@@ -369,10 +369,8 @@ function fadeScroll() {
 function conciergeAnimation() {
   const chat = document.querySelector(".greet-container");
   const footer = document.querySelector(".footer_wrap");
-  const blur = document.querySelector(".blur_wrap");
 
   gsap.set(chat, { opacity: 1, pointerEvents: "auto" });
-  gsap.set(blur, { opacity: 1 });
 
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -386,17 +384,7 @@ function conciergeAnimation() {
     opacity: 0,
     duration: durationFast,
     ease: "power2.out",
-  })
-    .to(
-      blur,
-      {
-        opacity: 0,
-        duration: durationFast,
-        ease: "power2.out",
-      },
-      "<"
-    )
-    .set(chat, { pointerEvents: "none" });
+  }).set(chat, { pointerEvents: "none" });
 }
 
 // MOBILE MENU
