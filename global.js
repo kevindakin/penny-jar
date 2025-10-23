@@ -192,6 +192,19 @@ function pageTransition() {
   });
 }
 
+function scrollIndicator() {
+  const scroll = document.querySelector(".hero_home_scroll");
+  if (!scroll) return;
+
+  gsap.to(scroll, {
+    y: 8,
+    repeat: -1,
+    yoyo: true,
+    duration: 0.8,
+    ease: "power1.inOut",
+  });
+}
+
 // SCROLL ANIMATIONS
 
 function createSplitText(target, type = "lines", options = {}) {
@@ -367,10 +380,11 @@ function fadeScroll() {
 }
 
 function conciergeAnimation() {
-  const chat = document.querySelector(".greet-container");
+  const chat = document.getElementById("greet-container");
+  const pill = chat.querySelector(".greet-form");
   const footer = document.querySelector(".footer_wrap");
 
-  gsap.set(chat, { opacity: 1, pointerEvents: "auto" });
+  gsap.set(pill, { opacity: 1, pointerEvents: "auto" });
 
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -380,11 +394,38 @@ function conciergeAnimation() {
     },
   });
 
-  tl.to(chat, {
+  tl.to(pill, {
     opacity: 0,
     duration: durationFast,
     ease: "power2.out",
-  }).set(chat, { pointerEvents: "none" });
+  }).set(pill, { pointerEvents: "none" });
+}
+
+function conciergeScroll() {
+  // Wait for the modal to exist in the DOM
+  const observer = new MutationObserver(() => {
+    const modal = document.getElementById("greet-container");
+
+    if (modal) {
+      modal.addEventListener("mouseenter", () => {
+        // Stop Lenis on the body
+        if (window.lenis) {
+          window.lenis.stop();
+        }
+      });
+
+      modal.addEventListener("mouseleave", () => {
+        // Restart Lenis on the body
+        if (window.lenis) {
+          window.lenis.start();
+        }
+      });
+
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // MOBILE MENU
@@ -711,8 +752,10 @@ window.addEventListener("load", () => {
   lenisScroll();
   copyright();
   conciergeAnimation();
+  conciergeScroll();
   loader();
   pageTransition();
+  scrollIndicator();
   wordsScroll();
   linesScroll();
   charsScroll();

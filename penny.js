@@ -27,27 +27,42 @@ function initCoinScene() {
 
   const loader = new THREE.GLTFLoader();
   loader.load(
-    "https://cdn.jsdelivr.net/gh/kevindakin/penny-jar@v1.1/logo.glb",
+    "https://cdn.jsdelivr.net/gh/kevindakin/penny-jar@v1.06/logo_rev.glb",
     (gltf) => {
       coinLogo = gltf.scene.getObjectByName("CoinLogo");
 
       coinLogo.traverse((m) => {
         if (m.isMesh) {
+          // Handle Fill mesh - keep as solid
+          if (m.name === "Fill") {
+            m.material = new THREE.MeshBasicMaterial({
+              color: 0x5c2e25,
+              transparent: true,
+              opacity: 0,
+              side: THREE.FrontSide,
+              depthWrite: true,
+              depthTest: true,
+            });
+            m.renderOrder = 0; // Render first
+            return;
+          }
+
+          // For all other meshes, create wireframe edges
           const edges = new THREE.EdgesGeometry(m.geometry, 40);
           const line = new THREE.LineSegments(
             edges,
             new THREE.LineBasicMaterial({
               color: 0xf7f0ed,
-              transparent: true,
+              transparent: false,
               opacity: 1,
-              depthTest: false,
-              depthWrite: false,
+              depthTest: true,
+              depthWrite: true, // CHANGED: write to depth buffer
             })
           );
-          line.renderOrder = 999;
+          line.renderOrder = 1; // ADDED: render after fill
           m.add(line);
 
-          // Invisible fill
+          // Invisible fill for non-Fill meshes
           m.material = new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0,
@@ -96,10 +111,20 @@ function initJarScene() {
 
   const loader = new THREE.GLTFLoader();
   loader.load(
-    "https://cdn.jsdelivr.net/gh/kevindakin/penny-jar@v1.11/jar.glb",
+    "https://cdn.jsdelivr.net/gh/kevindakin/penny-jar@v1.08/jar_rev.glb",
     (gltf) => {
+      // Get both the Jar and Coins groups
       jar = gltf.scene.getObjectByName("Jar");
+      const coins = gltf.scene.getObjectByName("Coins_Instance");
 
+      // Position and scale coins to fit inside the jar
+      if (coins) {
+        coins.position.set(-10, 60, 0); // Match jar position
+        coins.scale.set(0.62, 0.62, 0.62); // Scale down (adjust as needed)
+        coins.rotation.set(0, 0, 0); // Reset rotation if needed
+      }
+
+      // Process jar meshes
       jar.traverse((m) => {
         if (m.isMesh) {
           const edges = new THREE.EdgesGeometry(m.geometry, 40);
@@ -108,12 +133,12 @@ function initJarScene() {
             new THREE.LineBasicMaterial({
               color: 0xf7f0ed,
               opacity: 1,
-              transparent: true,
-              depthTest: false,
+              transparent: false, // Changed from true
+              depthTest: true, // Changed from false
               depthWrite: false,
             })
           );
-          line.renderOrder = 999;
+          line.renderOrder = 999; // Can probably remove this now
           m.add(line);
 
           m.material = new THREE.MeshBasicMaterial({
@@ -125,6 +150,54 @@ function initJarScene() {
           });
         }
       });
+
+      // Process coin meshes
+      if (coins) {
+        coins.traverse((m) => {
+          if (m.isMesh) {
+            // Check if this is a Fill mesh (check for "Fill" anywhere in the name)
+            if (m.name && m.name.toLowerCase().includes("fill")) {
+              m.material = new THREE.MeshBasicMaterial({
+                color: 0x5c2e25,
+                transparent: false,
+                opacity: 1,
+                side: THREE.FrontSide,
+                depthWrite: true,
+                depthTest: true,
+              });
+              m.renderOrder = 0;
+              return;
+            }
+
+            // Create wireframe edges for coin rim/logo
+            const edges = new THREE.EdgesGeometry(m.geometry, 40);
+            const line = new THREE.LineSegments(
+              edges,
+              new THREE.LineBasicMaterial({
+                color: 0xf7f0ed,
+                opacity: 0.6,
+                transparent: false,
+                depthTest: true,
+                depthWrite: true,
+              })
+            );
+            line.renderOrder = 1;
+            m.add(line);
+
+            // Invisible fill for original mesh
+            m.material = new THREE.MeshBasicMaterial({
+              transparent: true,
+              opacity: 0,
+              depthWrite: false,
+              depthTest: false,
+              colorWrite: false,
+            });
+          }
+        });
+
+        // Add coins to jar so they transform together
+        jar.add(coins);
+      }
 
       // Add helper side lines
       const material = new THREE.LineBasicMaterial({
@@ -234,8 +307,19 @@ function dropCoin() {
 
   if (droppedCoins.length > 0) {
     const lastCoin = droppedCoins[droppedCoins.length - 1];
+
     lastCoin.traverse((m) => {
       if (m.isLine) {
+        m.material.transparent = true; // CRITICAL: Make it transparent first
+        gsap.to(m.material, {
+          opacity: 0,
+          duration: 0.8,
+          onUpdate: renderJar,
+        });
+      }
+      // Fade out the fill as well
+      if (m.name === "Fill" && m.isMesh) {
+        m.material.transparent = true;
         gsap.to(m.material, {
           opacity: 0,
           duration: 0.8,
@@ -243,12 +327,30 @@ function dropCoin() {
         });
       }
     });
+
+    // Remove the coin after fade completes
+    gsap.delayedCall(0.8, () => {
+      jar.remove(lastCoin);
+    });
   }
 
   const newCoin = coinLogo.clone(true);
   newCoin.traverse((m) => {
     if (m.isMesh || m.isLine) {
       m.material = m.material.clone();
+      if (m.isLine) {
+        m.material.depthTest = true;
+      }
+    }
+    // Set fill color and proper settings for dropped coins
+    if (m.name === "Fill" && m.isMesh) {
+      m.material.color.setHex(0x5c2e25);
+      m.material.side = THREE.FrontSide;
+      m.material.depthWrite = true;
+      m.material.depthTest = true;
+      m.material.transparent = false;
+      m.material.opacity = 1;
+      m.renderOrder = 0;
     }
   });
 
@@ -260,15 +362,16 @@ function dropCoin() {
   droppedCoins.push(newCoin);
 
   gsap.to(newCoin.position, {
-    y: 50 + Math.random() * 50,
+    x: -30,
+    y: 173,
     duration: 2,
     ease: "bounce.out",
     onUpdate: renderJar,
   });
 
   gsap.to(newCoin.rotation, {
-    x: Math.PI * 2.6,
-    y: Math.PI * 2,
+    x: Math.PI * 2.48,
+    y: Math.PI * 2.06,
     duration: 2,
     ease: "power2.out",
     onUpdate: renderJar,
@@ -280,25 +383,72 @@ function clearDroppedCoins() {
   droppedCoins.forEach((coin) => {
     coin.traverse((m) => {
       if (m.isLine) {
+        m.material.transparent = true; // CRITICAL: Make it transparent first
         gsap.to(m.material, {
           opacity: 0,
           duration: 0.3,
           onUpdate: renderJar,
-          onComplete: () => jar.remove(coin),
         });
       }
+      // Also fade out fills when clearing
+      if (m.name === "Fill" && m.isMesh) {
+        m.material.transparent = true;
+        gsap.to(m.material, {
+          opacity: 0,
+          duration: 0.3,
+          onUpdate: renderJar,
+        });
+      }
+    });
+
+    // Remove coin after fade completes
+    gsap.delayedCall(0.3, () => {
+      jar.remove(coin);
     });
   });
   droppedCoins.length = 0;
 }
 
 // === Hook into testimonials swiper (desktop only) ===
-function initSwiperDrops(swiper) {
-  if (window.innerWidth < 992) return;
+function initSwiperDrops(swiper, wrapper) {
+  if (window.innerWidth < 992) {
+    return;
+  }
+
+  let isVisible = false;
+  let isDropping = false; // Prevent multiple drops
+
+  // Set up Intersection Observer to track visibility
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        isVisible = entry.isIntersecting;
+      });
+    },
+    {
+      threshold: 0.3,
+    }
+  );
+
+  // Observe the testimonials section
+  const testimonialsSection = document.querySelector(
+    ".home_testimonials_section"
+  );
+  if (testimonialsSection) {
+    observer.observe(testimonialsSection);
+  }
+
+  // Drop coin on slide change, but only if section is visible and not already dropping
   setTimeout(() => {
     swiper.on("slideChange", () => {
-      if (coinLogo) {
+      if (coinLogo && isVisible && !isDropping) {
+        isDropping = true;
         dropCoin();
+
+        // Reset the flag after the animation duration (2 seconds)
+        setTimeout(() => {
+          isDropping = false;
+        }, 2000);
       }
     });
   }, 200);
@@ -330,6 +480,7 @@ function renderCoin() {
     coinRenderer.render(coinScene, coinCamera);
   }
 }
+
 function renderJar() {
   if (jarRenderer && jarScene && jarCamera) {
     jarRenderer.render(jarScene, jarCamera);
@@ -338,9 +489,20 @@ function renderJar() {
 
 // === Coin scroll animations ===
 function initScrollAnimations() {
+  // Find and set the Fill mesh to start transparent with dark copper color
+  let fillMesh = null;
+  coinLogo.traverse((m) => {
+    if (m.name === "Fill" && m.isMesh) {
+      fillMesh = m;
+      m.material.color.setHex(0x5c2e25);
+      m.material.transparent = true;
+      m.material.opacity = 0;
+    }
+  });
+
   gsap.to(coinLogo.position, {
-    x: -70,
-    y: -170,
+    x: -8,
+    y: -25,
     scrollTrigger: {
       trigger: ".hero_home_section",
       start: "top top",
@@ -351,8 +513,8 @@ function initScrollAnimations() {
   });
 
   gsap.to(coinLogo.rotation, {
-    x: Math.PI * 0.5,
-    y: Math.PI * 2,
+    x: Math.PI * 0.52,
+    y: Math.PI * 2.1,
     scrollTrigger: {
       trigger: ".hero_home_section",
       start: "top top",
@@ -363,9 +525,9 @@ function initScrollAnimations() {
   });
 
   gsap.to(coinLogo.scale, {
-    x: 0.5,
-    y: 0.5,
-    z: 0.5,
+    x: 0.47,
+    y: 0.47,
+    z: 0.47,
     scrollTrigger: {
       trigger: ".hero_home_section",
       start: "top top",
@@ -375,13 +537,32 @@ function initScrollAnimations() {
     },
   });
 
+  // Animate the Fill opacity during scroll
+  if (fillMesh) {
+    gsap.to(fillMesh.material, {
+      opacity: 1,
+      scrollTrigger: {
+        trigger: ".hero_home_section",
+        start: "top top",
+        end: "bottom top",
+        scrub: true,
+        onUpdate: renderCoin,
+        onComplete: () => {
+          // Once fully faded in, make it completely opaque
+          fillMesh.material.transparent = false;
+          renderCoin();
+        },
+      },
+    });
+  }
+
   if (window.innerWidth > 991) {
     gsap.fromTo(
       coinLogo.position,
-      { x: -70, y: -170 },
+      { x: -8, y: -25 },
       {
-        x: -440,
-        y: -290,
+        x: -370,
+        y: -134,
         scrollTrigger: {
           trigger: ".home_testimonials_section",
           start: "top bottom",
