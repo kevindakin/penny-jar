@@ -382,9 +382,12 @@ function fadeScroll() {
 function conciergeAnimation() {
   const chat = document.getElementById("greet-container");
   const pill = chat.querySelector(".greet-form");
+  const dialog = chat.querySelector(".greet-dialog");
   const footer = document.querySelector(".footer_wrap");
 
+  gsap.set(chat, { pointerEvents: "auto" });
   gsap.set(pill, { opacity: 1, pointerEvents: "auto" });
+  gsap.set(dialog, { pointerEvents: "auto" });
 
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -398,7 +401,10 @@ function conciergeAnimation() {
     opacity: 0,
     duration: durationFast,
     ease: "power2.out",
-  }).set(pill, { pointerEvents: "none" });
+  })
+    .set(chat, { pointerEvents: "none" })
+    .set(pill, { pointerEvents: "none" })
+    .set(dialog, { pointerEvents: "auto" });
 }
 
 function conciergeScroll() {
