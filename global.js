@@ -379,10 +379,28 @@ function fadeScroll() {
   });
 }
 
+function getConciergeWidget() {
+  // Get the last element in body
+  const lastElement = document.body.lastElementChild;
+
+  // Validate it's actually the concierge widget by checking structure
+  if (
+    lastElement &&
+    lastElement.querySelector("form") &&
+    lastElement.querySelector("dialog")
+  ) {
+    return lastElement;
+  }
+
+  return null;
+}
+
 function conciergeAnimation() {
-  const chat = document.getElementById("greet-container");
-  const pill = chat.querySelector(".greet-form");
-  const dialog = chat.querySelector(".greet-dialog");
+  const chat = getConciergeWidget();
+  if (!chat) return;
+
+  const pill = chat.querySelector("form");
+  const dialog = chat.querySelector("dialog");
   const footer = document.querySelector(".footer_wrap");
 
   gsap.set(chat, { pointerEvents: "auto" });
@@ -408,20 +426,17 @@ function conciergeAnimation() {
 }
 
 function conciergeScroll() {
-  // Wait for the modal to exist in the DOM
   const observer = new MutationObserver(() => {
-    const modal = document.getElementById("greet-container");
+    const modal = getConciergeWidget();
 
     if (modal) {
       modal.addEventListener("mouseenter", () => {
-        // Stop Lenis on the body
         if (window.lenis) {
           window.lenis.stop();
         }
       });
 
       modal.addEventListener("mouseleave", () => {
-        // Restart Lenis on the body
         if (window.lenis) {
           window.lenis.start();
         }
