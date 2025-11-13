@@ -399,11 +399,15 @@ function conciergeAnimation() {
   const chat = getConciergeWidget();
   if (!chat) return;
 
-  const pill = chat.querySelector("form");
-  const dialog = chat.querySelector("dialog");
+  const wrap = chat.children[1];
+  const button = wrap.querySelector("button");
+  const pill = wrap.querySelector("form");
+  const dialog = wrap.querySelector("dialog");
   const footer = document.querySelector(".footer_wrap");
 
   gsap.set(chat, { pointerEvents: "auto" });
+  gsap.set(wrap, { pointerEvents: "auto" });
+  gsap.set(button, { display: "inline-block", pointerEvents: "auto" });
   gsap.set(pill, { opacity: 1, pointerEvents: "auto" });
   gsap.set(dialog, { pointerEvents: "auto" });
 
@@ -420,7 +424,14 @@ function conciergeAnimation() {
     duration: durationFast,
     ease: "power2.out",
   })
+    .to(button, {
+      opacity: 0,
+      duration: durationFast,
+      ease: "power2.out",
+    })
     .set(chat, { pointerEvents: "none" })
+    .set(wrap, { pointerEvents: "none" })
+    .set(button, { display: "none", pointerEvents: "none" })
     .set(pill, { pointerEvents: "none" })
     .set(dialog, { pointerEvents: "auto" });
 }
