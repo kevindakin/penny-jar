@@ -384,11 +384,7 @@ function getConciergeWidget() {
   const lastElement = document.body.lastElementChild;
 
   // Validate it's actually the concierge widget by checking structure
-  if (
-    lastElement &&
-    lastElement.querySelector("form") &&
-    lastElement.querySelector("dialog")
-  ) {
+  if (lastElement && lastElement.querySelector("dialog")) {
     return lastElement;
   }
 
@@ -400,14 +396,12 @@ function conciergeAnimation() {
   if (!chat) return;
 
   const wrap = chat.children[1];
-  const button = wrap.querySelector("button");
-  const pill = wrap.querySelector("form");
+  const pill = wrap.querySelector(".concierge-pill");
   const dialog = wrap.querySelector("dialog");
   const footer = document.querySelector(".footer_wrap");
 
   gsap.set(chat, { pointerEvents: "auto" });
   gsap.set(wrap, { pointerEvents: "auto" });
-  gsap.set(button, { display: "inline-block", pointerEvents: "auto" });
   gsap.set(pill, { opacity: 1, pointerEvents: "auto" });
   gsap.set(dialog, { pointerEvents: "auto" });
 
@@ -424,14 +418,8 @@ function conciergeAnimation() {
     duration: durationFast,
     ease: "power2.out",
   })
-    .to(button, {
-      opacity: 0,
-      duration: durationFast,
-      ease: "power2.out",
-    })
     .set(chat, { pointerEvents: "none" })
     .set(wrap, { pointerEvents: "none" })
-    .set(button, { display: "none", pointerEvents: "none" })
     .set(pill, { pointerEvents: "none" })
     .set(dialog, { pointerEvents: "auto" });
 }
