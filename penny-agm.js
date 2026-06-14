@@ -1,6 +1,6 @@
 const INTRO_SECTION = ".scroller_section";
 
-const FINAL_COIN_Y = -30;
+const FINAL_COIN_Y = 70;
 
 // Global vars for both scenes
 let coinScene, coinCamera, coinRenderer, coinLogo;
@@ -231,7 +231,7 @@ function initJarScene() {
       jar.add(lineLeft);
       jar.add(lineRight);
 
-      jar.position.set(0, -275, 0);
+      jar.position.set(0, -150, 0);
       jar.scale.set(1.5, 1.5, 1.5);
       jar.rotation.set(0.15, -0.2, 0);
 
