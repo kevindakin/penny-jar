@@ -231,7 +231,7 @@ function initJarScene() {
       jar.add(lineLeft);
       jar.add(lineRight);
 
-      jar.position.set(0, -150, 0);
+      jar.position.set(0, -200, 0);
       jar.scale.set(1.5, 1.5, 1.5);
       jar.rotation.set(0.15, -0.2, 0);
 
